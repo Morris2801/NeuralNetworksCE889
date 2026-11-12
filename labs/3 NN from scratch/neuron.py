@@ -20,7 +20,7 @@ class Neuron:
         for neuron, weight in self.connections["backward"].items():
             acum += neuron.activation_val * weight
         if self.activation_fn:
-            self.activation_val = self.activation_fn(acum)
+            self.activation_val = self.activation_fn(acum, lamb)
         else:
             self.activation_val = acum
     
@@ -89,21 +89,21 @@ deltaO1 = error1
 error2 = target2 - output2.activation_val
 deltaO2 = error2
 sse = 0.5 * (error1 **2 + error2**2)
-
+'''
 print("Output1 =", output1.activation_val)
 print("Output2 =", output2.activation_val)
 print("Error1 =", error1)
 print("Error2 =", error2)
-print("SSE =", sse)
-
+print("SSE =aaaaaaaaaaaaaaaaaa", sse)
+'''
 # weightupdating ----------------------------------
 
-delta_h1 = hidden1.activation_val * (1 - hidden1.activation_val) * (deltaO1 * hidden1.connections["forward"][output1] + deltaO2 * hidden1.connections["forward"][output2])
-delta_h2 = hidden2.activation_val * (1 - hidden2.activation_val) * (deltaO1 * hidden2.connections["forward"][output1] + deltaO2 * hidden2.connections["forward"][output2])
-delta_h3 = hidden3.activation_val * (1 - hidden3.activation_val) * (deltaO1 * hidden3.connections["forward"][output1] + deltaO2 * hidden3.connections["forward"][output2])
-delta_h4 = hidden4.activation_val * (1 - hidden4.activation_val) * (deltaO1 * hidden4.connections["forward"][output1] + deltaO2 * hidden4.connections["forward"][output2])
+delta_h1 = lamb * hidden1.activation_val * (1 - hidden1.activation_val) * (deltaO1 * hidden1.connections["forward"][output1] + deltaO2 * hidden1.connections["forward"][output2])
+delta_h2 = lamb * hidden2.activation_val * (1 - hidden2.activation_val) * (deltaO1 * hidden2.connections["forward"][output1] + deltaO2 * hidden2.connections["forward"][output2])
+delta_h3 = lamb * hidden3.activation_val * (1 - hidden3.activation_val) * (deltaO1 * hidden3.connections["forward"][output1] + deltaO2 * hidden3.connections["forward"][output2])
+delta_h4 = lamb * hidden4.activation_val * (1 - hidden4.activation_val) * (deltaO1 * hidden4.connections["forward"][output1] + deltaO2 * hidden4.connections["forward"][output2])
 
-print("Before:", hidden1.connections["forward"][output1])
+#print("Before:", hidden1.connections["forward"][output1])
 output1.update_weights(deltaO1, eta)
 output2.update_weights(deltaO2, eta)
 
@@ -112,8 +112,8 @@ hidden2.update_weights(delta_h2, eta)
 hidden3.update_weights(delta_h3, eta)
 hidden4.update_weights(delta_h4, eta)
 
-print("After:", hidden1.connections["forward"][output1])
-
+#print("After:", hidden1.connections["forward"][output1])
+'''NOW UNUSED aftertest
 #second forward pass 
 for neuron in hiddenlayer: 
     neuron.activate()
@@ -134,3 +134,4 @@ if newSSE < sse:
     print("Learning: SSE dec")
 else:
     print("SSE up")
+'''
