@@ -57,6 +57,12 @@ class Network:
         self.outputLayer = outputLayer
         self.eta =eta
         self.alpha =alpha
+
+        self.inputMax = 0
+        self.inputMin = 0
+        self.outputMax = 0
+        self.outputMin = 0
+
     def setInputs(self, inputs):
         for neuron, val in zip(self.inputLayer.neurons, inputs):
             neuron.activation_val = val
@@ -66,40 +72,76 @@ class Network:
     def fullyConnect(sef, sourceLayer, targetLayer):
         for source in sourceLayer.neurons:
             for target in targetLayer.neurons:
-                source.connect(target, rd.uniform(0,1)) #################################weights de 0 a 1
-    def train(self, inputs, targets, maxEpochs): 
-        self.setInputs(inputs)
+                source.connect(target, rd.uniform(-1,1)) #################################weights de -1 a 1
+    
+    def exploreDataset(self, dataset):
+        allIn = []
+        allOut =[]
+        for inputs, targets in dataset:
+            allIn.extend(inputs)
+            allOut.extend(targets)
+        self.inputMax = max(allIn)
+        self.inputMin = min(allIn)
+        self.outputMax = max(allOut)
+        self.outputMin = min(allOut)
+    def normalize(self, value, minVal, maxVal):
+        return(value-minVal) / (maxVal - minVal)
+    def antinormalize(self,value,minVal,maxVal):
+        return (value * (maxVal - minVal) + minVal)
+
+    def train(self, dataset, maxEpochs): 
+        self.exploreDataset(dataset)
         sseOld = 0
         sse = 0
         state = None 
         #fordebugg
         for epoch in range(maxEpochs):    
-            self.forwardPss()
-            outputDeltas =[]
-            hiddenDeltas=[]
-            sseOld=sse
-            sse = 0
-            #outperrors
-            for output, target in zip(self.outputLayer.neurons, targets):
-                error= target-output.activation_val
-                
-                sse += 0.5 *    (error**2)
-                outputDeltas.append(error)
-            #hidderrors
-            for hidden in self.hiddenLayer.neurons:
-                weightError = 0
-                for output, weight in hidden.connections["forward"].items():
-                    index = (self.outputLayer.neurons.index(output))
-                    weightError += outputDeltas[index] * weight
-                delta = hidden.lamb * hidden.activation_val * (1-hidden.activation_val) * weightError #############LINEARACTIV -> DERIV SIMPL
-                hiddenDeltas.append(delta)
-            #updateweights
-            for output, delta in zip(self.outputLayer.neurons, outputDeltas):
-                output.update_weights(delta, self.eta, self.alpha)
-            for hidden, delta in zip(self.hiddenLayer.neurons, hiddenDeltas):
-                hidden.update_weights(delta, self.eta, self.alpha)
-            state = "Learning" if (sse < sseOld) else "Dumber" if (sse > sseOld) else "Hmmmm" 
-            print(f"Epoch {epoch} | SSE:{sse} | State {state}")
-            if epoch > 1 and (sse <= 0.0000000001): 
-                print("Early stopping criteria")
-                break
+            totalSSE= 0
+            rd.shuffle(dataset)
+            for inputs, targets in dataset:
+                for inputs, targets in dataset:
+                    inputs = [self.normalize(x, self.inputMin, self.inputMax)for x in inputs]
+                    targets = [self.normalize(y, self.outputMin, self.outputMax)for y in targets]
+                        
+                self.setInputs(inputs)
+                self.forwardPss()
+                outputDeltas =[]
+                hiddenDeltas=[]
+                sseOld=sse
+                sse = 0
+
+                #outperrors
+                for output, target in zip(self.outputLayer.neurons, targets):
+                    error= target-output.activation_val
+                    
+                    sse += 0.5 *    (error**2)
+                    outputDeltas.append(error)
+                #hidderrors
+                for hidden in self.hiddenLayer.neurons:
+                    weightError = 0
+                    for output, weight in hidden.connections["forward"].items():
+                        index = (self.outputLayer.neurons.index(output))
+                        weightError += outputDeltas[index] * weight
+                    delta = hidden.lamb * hidden.activation_val * (1-hidden.activation_val) * weightError #############LINEARACTIV -> DERIV SIMPL
+                    hiddenDeltas.append(delta)
+                #updateweights
+                for output, delta in zip(self.outputLayer.neurons, outputDeltas):
+                    output.update_weights(delta, self.eta, self.alpha)
+                for hidden, delta in zip(self.hiddenLayer.neurons, hiddenDeltas):
+                    hidden.update_weights(delta, self.eta, self.alpha)
+                totalSSE+=sse
+                state = "Learning" if (sse < sseOld) else "Dumber" if (sse > sseOld) else "Hmmmm" 
+            #print(f"Epoch {epoch} | TotalSSE:{totalSSE} | State {state}")
+            if epoch % 1000 == 0: 
+                print(f"Epoch {epoch}  | TOtal SSE={totalSSE}")
+    
+    def predict(self, inputs):
+        inputs = [self.normalize(x, self.inputMin, self.inputMax) for x in inputs]
+
+        self.setInputs(inputs)
+        self.forwardPss()
+        values = []
+        for neuron in self.outputLayer.neurons:
+            values.append(self.antinormalize(neuron.activation_val,self.outputMin,self.outputMax ))
+        
+        return values
