@@ -3,7 +3,10 @@ from neuron import Neuron
 
 ##setup---------------------------
 alpha = 0.1 # momentum
-lamb = 0.8 # labmda
+lambHidden = 0.8 # labmda
+lambOutput = 0.75
+biasHidden = 1
+biasOutput = 1
 eta = 0.6 #learning rate
 weights = [rd.uniform(-1,1) for _ in range(16)]
 A, B, C, D, E , F, G, H , I , J , K, L, M, N, O , P= weights
@@ -14,19 +17,19 @@ flag = None
 #input
 input1 = Neuron(2)
 input2 = Neuron(4)
-target1 = 6
-target2 = 4
+target1 = (input1.activation_val + input2.activation_val )/ 2
+target2 = -2
 
 #hiddenlayer
-hidden1 = Neuron(activation_fn=Neuron.activation_f_sigmoid)
-hidden2 = Neuron(activation_fn=Neuron.activation_f_sigmoid)
-hidden3 = Neuron(activation_fn=Neuron.activation_f_sigmoid)
-hidden4 = Neuron(activation_fn=Neuron.activation_f_sigmoid)
+hidden1 = Neuron(activation_fn=Neuron.activation_f_sigmoid, lamb=lambHidden, bias=biasHidden)
+hidden2 = Neuron(activation_fn=Neuron.activation_f_sigmoid, lamb=lambHidden, bias=biasHidden)
+hidden3 = Neuron(activation_fn=Neuron.activation_f_sigmoid, lamb=lambHidden, bias=biasHidden)
+hidden4 = Neuron(activation_fn=Neuron.activation_f_sigmoid, lamb=lambHidden, bias=biasHidden)
 hiddenlayer = [hidden1, hidden2, hidden3, hidden4]
 
 #output
-output1 = Neuron()
-output2 = Neuron()
+output1 = Neuron(lamb=lambOutput, bias = biasOutput)
+output2 = Neuron(lamb=lambOutput ,bias = biasOutput)
 outputlayer = [output1, output2]
 
 #connections
@@ -66,27 +69,27 @@ for epoch in range(epochs):
     if epoch > 0: 
         flag = sse < sseOld
     else: 
-        flag : None
+        flag = None
     #backprop&weightupdating ----------------------------------
-    delta_h1 = lamb * hidden1.activation_val * (1 - hidden1.activation_val) * (deltaO1 * hidden1.connections["forward"][output1] + deltaO2 * hidden1.connections["forward"][output2])
-    delta_h2 = lamb * hidden2.activation_val * (1 - hidden2.activation_val) * (deltaO1 * hidden2.connections["forward"][output1] + deltaO2 * hidden2.connections["forward"][output2])
-    delta_h3 = lamb * hidden3.activation_val * (1 - hidden3.activation_val) * (deltaO1 * hidden3.connections["forward"][output1] + deltaO2 * hidden3.connections["forward"][output2])
-    delta_h4 = lamb * hidden4.activation_val * (1 - hidden4.activation_val) * (deltaO1 * hidden4.connections["forward"][output1] + deltaO2 * hidden4.connections["forward"][output2])
+    delta_h1 = hidden1.lamb * hidden1.activation_val * (1 - hidden1.activation_val) * (deltaO1 * hidden1.connections["forward"][output1] + deltaO2 * hidden1.connections["forward"][output2])
+    delta_h2 = hidden2.lamb * hidden2.activation_val * (1 - hidden2.activation_val) * (deltaO1 * hidden2.connections["forward"][output1] + deltaO2 * hidden2.connections["forward"][output2])
+    delta_h3 = hidden3.lamb * hidden3.activation_val * (1 - hidden3.activation_val) * (deltaO1 * hidden3.connections["forward"][output1] + deltaO2 * hidden3.connections["forward"][output2])
+    delta_h4 = hidden4.lamb * hidden4.activation_val * (1 - hidden4.activation_val) * (deltaO1 * hidden4.connections["forward"][output1] + deltaO2 * hidden4.connections["forward"][output2])
 
-    output1.update_weights(deltaO1, eta)
-    output2.update_weights(deltaO2, eta)
-    hidden1.update_weights(delta_h1, eta)
-    hidden2.update_weights(delta_h2, eta)
-    hidden3.update_weights(delta_h3, eta)
-    hidden4.update_weights(delta_h4, eta)
+    output1.update_weights(deltaO1, eta, alpha)
+    output2.update_weights(deltaO2, eta, alpha)
+    hidden1.update_weights(delta_h1, eta, alpha)
+    hidden2.update_weights(delta_h2, eta, alpha)
+    hidden3.update_weights(delta_h3, eta, alpha)
+    hidden4.update_weights(delta_h4, eta, alpha)
 
     #DEBUG
     print(f"Epoch {epoch}|| Output1:{output1.activation_val} | Output2:{output2.activation_val} || SSE:{sse} | Flag: {flag}")
-    '''
-    if sse < 0.0000001: 
+    
+    if sse == sseOld and flag == False: 
         print("Finished early")
         break
-    '''
+    
 print("-----------")
 print("Final Output1: ", output1.activation_val)
 print("Final Output2: ", output2.activation_val)

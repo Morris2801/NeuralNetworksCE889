@@ -3,9 +3,13 @@ import random as rd
 
 ##defs----------
 class Neuron:
-    def __init__(self, activation_val = 0, activation_fn = None):
+    def __init__(self, activation_val = 0, activation_fn = None, lamb = 1, bias = 0):
         self.activation_val = activation_val
         self.activation_fn = activation_fn
+        self.lamb = lamb
+        self.bias = bias
+        self.previousdiffweight = {}
+        self.previousdiffbias = 0
         self.connections = {"forward": {}, "backward":{}}
         
     def activation_f_sigmoid(input_val = 0, lamb = 1):
@@ -16,22 +20,27 @@ class Neuron:
         target.connections["backward"][self]=weight    
     
     def activate(self):
-        acum = 0
+        acum = self.bias
         for neuron, weight in self.connections["backward"].items():
             acum += neuron.activation_val * weight
         if self.activation_fn:
-            self.activation_val = self.activation_fn(acum, lamb)
+            self.activation_val = self.activation_fn(acum, self.lamb)
         else:
             self.activation_val = acum
     
-    def update_weights(self, delta, eta):
+    def update_weights(self, delta, eta,alpha):
         for neuron, weight in self.connections["backward"].items():
             dw = eta * delta * neuron.activation_val
+            dw += alpha*self.previousdiffweight.get(neuron, 0)
             newWeight = weight + dw
             self.connections["backward"][neuron] = newWeight
             neuron.connections["forward"][self] = newWeight
+            self.previousdiffweight[neuron] = dw
+        db = eta*delta+alpha*self.previousdiffbias
+        self.bias += db
+        self.previousdiffbias = db
 
-
+'''
 ##setup---------------------------
 alpha = 0.7 # learningrate
 lamb = 0.8 # labmda
@@ -89,13 +98,13 @@ deltaO1 = error1
 error2 = target2 - output2.activation_val
 deltaO2 = error2
 sse = 0.5 * (error1 **2 + error2**2)
-'''
+
 print("Output1 =", output1.activation_val)
 print("Output2 =", output2.activation_val)
 print("Error1 =", error1)
 print("Error2 =", error2)
 print("SSE =aaaaaaaaaaaaaaaaaa", sse)
-'''
+
 # weightupdating ----------------------------------
 
 delta_h1 = lamb * hidden1.activation_val * (1 - hidden1.activation_val) * (deltaO1 * hidden1.connections["forward"][output1] + deltaO2 * hidden1.connections["forward"][output2])
@@ -113,7 +122,7 @@ hidden3.update_weights(delta_h3, eta)
 hidden4.update_weights(delta_h4, eta)
 
 #print("After:", hidden1.connections["forward"][output1])
-'''NOW UNUSED aftertest
+NOW UNUSED aftertest
 #second forward pass 
 for neuron in hiddenlayer: 
     neuron.activate()
