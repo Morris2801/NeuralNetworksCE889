@@ -58,10 +58,11 @@ class Network:
         self.eta =eta
         self.alpha =alpha
 
-        self.inputMax = 0
-        self.inputMin = 0
-        self.outputMax = 0
-        self.outputMin = 0
+        self.inputMax = []
+        self.inputMin = []
+        self.outputMaxs = []
+        self.outputMins = []
+        self.trainingSSELog = []
 
     def setInputs(self, inputs):
         for neuron, val in zip(self.inputLayer.neurons, inputs):
@@ -76,14 +77,20 @@ class Network:
     
     def exploreDataset(self, dataset):
         allIn = []
-        allOut =[]
         for inputs, targets in dataset:
             allIn.extend(inputs)
-            allOut.extend(targets)
         self.inputMax = max(allIn)
         self.inputMin = min(allIn)
-        self.outputMax = max(allOut)
-        self.outputMin = min(allOut)
+        numOutputs = len(dataset[0][1])
+        self.outputMaxs =[]
+        self.outputMins = []
+        for i in range(numOutputs):
+            values = []
+            for _, targets in dataset: 
+                values.append(targets[i])
+            self.outputMins.append(min(values))
+            self.outputMaxs.append(max(values))
+
     def normalize(self, value, minVal, maxVal):
         return(value-minVal) / (maxVal - minVal)
     def antinormalize(self,value,minVal,maxVal):
@@ -91,23 +98,23 @@ class Network:
 
     def train(self, dataset, maxEpochs): 
         self.exploreDataset(dataset)
-        sseOld = 0
+        originalSSE = 0
         sse = 0
         state = None 
         #fordebugg
+        oldtotalSSE = 0
+        totalSSE = 0
         for epoch in range(maxEpochs):    
+            oldtotalSSE = totalSSE
             totalSSE= 0
             rd.shuffle(dataset)
             for inputs, targets in dataset:
-                for inputs, targets in dataset:
-                    inputs = [self.normalize(x, self.inputMin, self.inputMax)for x in inputs]
-                    targets = [self.normalize(y, self.outputMin, self.outputMax)for y in targets]
-                        
+                inputs = [self.normalize(x, self.inputMin, self.inputMax)for x in inputs]
+                targets = [self.normalize(y, self.outputMins[i], self.outputMaxs[i])for i, y in enumerate(targets)]            
                 self.setInputs(inputs)
                 self.forwardPss()
                 outputDeltas =[]
                 hiddenDeltas=[]
-                sseOld=sse
                 sse = 0
 
                 #outperrors
@@ -130,10 +137,16 @@ class Network:
                 for hidden, delta in zip(self.hiddenLayer.neurons, hiddenDeltas):
                     hidden.update_weights(delta, self.eta, self.alpha)
                 totalSSE+=sse
-                state = "Learning" if (sse < sseOld) else "Dumber" if (sse > sseOld) else "Hmmmm" 
             #print(f"Epoch {epoch} | TotalSSE:{totalSSE} | State {state}")
+            if epoch == 0: 
+                originalSSE = totalSSE
             if epoch % 1000 == 0: 
-                print(f"Epoch {epoch}  | TOtal SSE={totalSSE}")
+                state = "Learning" if (totalSSE< oldtotalSSE) else "Dumber" if (totalSSE > oldtotalSSE) else "Hmmmm"                 
+                self.trainingSSELog.append([epoch, totalSSE])
+                print(f"Epoch {epoch}  | TOtal SSE={totalSSE} | {state} by {totalSSE-oldtotalSSE}")
+            if (maxEpochs - epoch) == 1: 
+                print(f"Tr. Results: SSE from {originalSSE} to {totalSSE}")
+                print("---------------")
     
     def predict(self, inputs):
         inputs = [self.normalize(x, self.inputMin, self.inputMax) for x in inputs]
@@ -141,7 +154,6 @@ class Network:
         self.setInputs(inputs)
         self.forwardPss()
         values = []
-        for neuron in self.outputLayer.neurons:
-            values.append(self.antinormalize(neuron.activation_val,self.outputMin,self.outputMax ))
-        
+        for i, neuron in enumerate(self.outputLayer.neurons):
+            values.append(self.antinormalize(neuron.activation_val,self.outputMins[i],self.outputMaxs[i] ))
         return values
