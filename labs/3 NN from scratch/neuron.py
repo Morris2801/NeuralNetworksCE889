@@ -1,5 +1,9 @@
 import math as m
 import random as rd
+import json
+import os
+
+targetDir = r"C:\Users\mauri\Coding\Python programs\Essex\Neural Networks CE889\labs\3 NN from scratch\weights"
 
 ##defs----------
 class Neuron:
@@ -58,8 +62,8 @@ class Network:
         self.eta =eta
         self.alpha =alpha
 
-        self.inputMax = []
-        self.inputMin = []
+        self.inputMax = 0
+        self.inputMin = 0
         self.outputMaxs = []
         self.outputMins = []
         self.trainingSSELog = []
@@ -75,7 +79,7 @@ class Network:
             for target in targetLayer.neurons:
                 source.connect(target, rd.uniform(-1,1)) #################################weights de -1 a 1
     
-    def exploreDataset(self, dataset):
+    def getRanges(self, dataset):
         allIn = []
         for inputs, targets in dataset:
             allIn.extend(inputs)
@@ -96,8 +100,38 @@ class Network:
     def antinormalize(self,value,minVal,maxVal):
         return (value * (maxVal - minVal) + minVal)
 
+    def getWeights(self):
+        dataToSave = []
+        for layer in self.layers[1:]:
+            layerData = []
+            for neuron in layer.neurons:
+                neuronData = {
+                    "bias": neuron.bias, 
+                    "weights": list(neuron.connections["backward"].values())
+                }    
+                layerData.append(neuronData)
+            dataToSave.append(layerData)
+        return dataToSave
+    def saveWeights(self, f):
+        os.makedirs(targetDir, exist_ok=True)
+        filepath = os.path.join(targetDir, f)
+        dataToSave = self.getWeights()
+        with open(filepath, "w") as f: 
+            json.dump(dataToSave, f, indent = 4)
+    def loadWeights(self, f): 
+        os.makedirs(targetDir, exist_ok=True)
+        filepath = os.path.join(targetDir, f)
+        with open(filepath, "r") as f: 
+            data = json.load(f)
+        for layerData, layer in zip(data, self.layers[1:]):
+            for neuronData, neuron in zip(layerData, layer.neurons):
+                neuron.bias = neuronData["bias"]
+                for source, weight in zip(neuron.connections["backward"].keys(), neuronData["weights"]):
+                    neuron.connections["backward"][source] = weight
+                    source.connections["forward"][neuron] = weight
+
     def train(self, dataset, maxEpochs): 
-        self.exploreDataset(dataset)
+        self.getRanges(dataset)
         originalSSE = 0
         sse = 0
         state = None 
@@ -140,13 +174,15 @@ class Network:
             #print(f"Epoch {epoch} | TotalSSE:{totalSSE} | State {state}")
             if epoch == 0: 
                 originalSSE = totalSSE
+                self.trainingSSELog.append([epoch, originalSSE])
             if epoch % 1000 == 0: 
-                state = "Learning" if (totalSSE< oldtotalSSE) else "Dumber" if (totalSSE > oldtotalSSE) else "Hmmmm"                 
+                state = "Learning" if (totalSSE< self.trainingSSELog[-1][1]) else "Dumber" if (totalSSE > self.trainingSSELog[-1][1]) else "Hmmmm"                 
                 self.trainingSSELog.append([epoch, totalSSE])
-                print(f"Epoch {epoch}  | TOtal SSE={totalSSE} | {state} by {totalSSE-oldtotalSSE}")
+                print(f"Epoch {epoch}  | TOtal SSE={totalSSE} | {state} by {totalSSE-self.trainingSSELog[-1][1]}")
             if (maxEpochs - epoch) == 1: 
                 print(f"Tr. Results: SSE from {originalSSE} to {totalSSE}")
                 print("---------------")
+                self.saveWeights("XORTEST.json")
     
     def predict(self, inputs):
         inputs = [self.normalize(x, self.inputMin, self.inputMax) for x in inputs]

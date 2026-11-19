@@ -22,21 +22,21 @@ class EventHandler:
                 self.mouse_up()
 
     def keyboard_controller_down(self, event):
-        if event.key == 273 or event.key == 1073741906:
+        if event.key in (273, 1073741906, 119):
             self.controller.set_up(True)
-        elif event.key == 276 or event.key == 1073741904:
+        elif event.key in (276, 1073741904, 97):
             self.controller.set_left(True)
-        elif event.key == 275 or event.key == 1073741903:
+        elif event.key in (275, 1073741903, 100):
             self.controller.set_right(True)
-        elif event.key == 113 or event.key == 27:
+        elif event.key in (113, 27):
             self.quit()
 
-    def keyboard_controller_up(self, event):
-        if event.key == 273 or event.key == 1073741906:
+    def keyboard_controller_up(self, event):        
+        if event.key in (273, 1073741906, 119):            
             self.controller.set_up(False)
-        if event.key == 276 or event.key == 1073741904:
+        if event.key in (276, 1073741904, 97):
             self.controller.set_left(False)
-        if event.key == 275 or event.key == 1073741903:
+        if event.key in (275, 1073741903, 100):
             self.controller.set_right(False)
 
     def quit(self):

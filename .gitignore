@@ -1,2 +1,4 @@
 .vscode
 .cpyt
+__pycache__
+venv

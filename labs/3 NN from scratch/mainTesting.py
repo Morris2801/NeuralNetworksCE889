@@ -6,8 +6,8 @@ import matplotlib.pyplot as plt
 alpha = 0.15 # momentum
 lambHidden = 0.8 # labmda
 lambOutput = 0.75
-biasHidden = 0
-biasOutput = 0
+biasHidden = 1
+biasOutput = 1
 eta = 0.1 #learning rate
 
 ##newtork
@@ -71,7 +71,7 @@ datasetIdentity = [
     ([30, 30], [30]),
 ]
 
-net.train(datasetXOR,10000)
+'''et.train(datasetXOR,10000)
 
 epochs = []
 sses = []
@@ -84,7 +84,8 @@ plt.xlabel("Epoch")
 plt.ylabel("SSE")
 plt.title("Training SSE")
 plt.show()
-
+'''
+net.loadWeights(r".\XORTEST.json")
 target = 0
 prediction = net.predict([1,1])
 print(f"Target {target} vs Prediction {prediction[0]}")
