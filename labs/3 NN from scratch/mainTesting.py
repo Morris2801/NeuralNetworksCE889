@@ -71,7 +71,7 @@ datasetIdentity = [
     ([30, 30], [30]),
 ]
 
-'''et.train(datasetXOR,10000)
+'''net.train(datasetXOR,10000)
 
 epochs = []
 sses = []
@@ -87,5 +87,5 @@ plt.show()
 '''
 net.loadWeights(r".\XORTEST.json")
 target = 0
-prediction = net.predict([1,1])
+prediction = net.predict([0,0])
 print(f"Target {target} vs Prediction {prediction[0]}")

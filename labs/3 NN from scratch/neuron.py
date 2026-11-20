@@ -101,7 +101,13 @@ class Network:
         return (value * (maxVal - minVal) + minVal)
 
     def getWeights(self):
-        dataToSave = []
+        dataToSave = {
+            "inputMin": self.inputMin, 
+            "inputMax": self.inputMax,
+            "outputMins": self.outputMins,
+            "outputMaxs": self.outputMaxs,
+            "layers": []
+        }
         for layer in self.layers[1:]:
             layerData = []
             for neuron in layer.neurons:
@@ -110,7 +116,7 @@ class Network:
                     "weights": list(neuron.connections["backward"].values())
                 }    
                 layerData.append(neuronData)
-            dataToSave.append(layerData)
+            dataToSave["layers"].append(layerData)
         return dataToSave
     def saveWeights(self, f):
         os.makedirs(targetDir, exist_ok=True)
@@ -123,12 +129,18 @@ class Network:
         filepath = os.path.join(targetDir, f)
         with open(filepath, "r") as f: 
             data = json.load(f)
-        for layerData, layer in zip(data, self.layers[1:]):
+        self.inputMin = data["inputMin"]
+        self.inputMax = data["inputMax"]
+        self.outputMins = data["outputMins"]
+        self.outputMaxs = data["outputMaxs"]
+        layersData = data["layers"]
+        for layerData, layer in zip(layersData, self.layers[1:]):
             for neuronData, neuron in zip(layerData, layer.neurons):
                 neuron.bias = neuronData["bias"]
                 for source, weight in zip(neuron.connections["backward"].keys(), neuronData["weights"]):
                     neuron.connections["backward"][source] = weight
                     source.connections["forward"][neuron] = weight
+        print("Weights loaded")
 
     def train(self, dataset, maxEpochs): 
         self.getRanges(dataset)
